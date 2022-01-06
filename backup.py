@@ -11,7 +11,7 @@ from scripts import *
 
 timestamp = calendar.timegm(time.gmtime())
 print("backup iniziato alle",timestamp)
-
+old_db_digest = "d41d8cd98f00b204e9800998ecf8427e"
 def main():
     total_errors = []
     total_errors_files = []
@@ -113,15 +113,32 @@ for string in md5_in_remote:
                         esiste = check_if_exists(dirName+path)
                         if debug == 1: print("exists ==", esiste)
                         if esiste == 1:
-                            if has_hidden_attribute(dirName+path) == True and hidden_files == 1:
-                                pass
-                                update_is_local(md5, "no")
-                            else:
-                                epoch = get_epoch(element)
-                                epoch_localfile = get_last_time_modified(dirName+path)
-                                if debug == 1: print("if epoch", epoch,"<", epoch_localfile)
-                                if int(epoch) < epoch_localfile:
+                            if os_name == "Windows":
+                                if has_hidden_attribute(dirName+path) == True and hidden_files == 1:
                                     update_is_local(md5, "no")
+                                    pass
+                                else:
+                                    epoch = get_epoch(element)
+                                    epoch_localfile = get_last_time_modified(dirName+path)
+                                    if debug == 1: print("if epoch", epoch,"<", epoch_localfile)
+                                    if int(epoch) < epoch_localfile:
+                                        update_is_local(md5, "no")
+                            if os_name == "Linux":
+                                non_aggiungere = 0
+                                fullPath = dirName+path
+                                var = fullPath.split("/")
+                                for elem in var:
+                                    if elem != "":
+                                        if elem[0] in character_sets:
+                                            update_is_local(md5, "no")
+                                if non_aggiungere == 1:
+                                    pass
+                                else:
+                                    epoch = get_epoch(element)
+                                    epoch_localfile = get_last_time_modified(dirName+path)
+                                    if debug == 1: print("if epoch", epoch,"<", epoch_localfile)
+                                    if int(epoch) < epoch_localfile:
+                                        update_is_local(md5, "no")
                         if esiste == 0:
                             update_is_local(md5, "no")
     else: #digest_cache not in string

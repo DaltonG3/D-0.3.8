@@ -20,18 +20,21 @@ if os.path.isfile(fname) is False:
 
 def upload_datastore_func():
     async def upload_datastore():
-        digest = get_md5("d41d8cd98f00b204e9800998ecf8427e")
-        if digest != "d41d8cd98f00b204e9800998ecf8427e":
-            msg_id = 1
-            async for message in client.iter_messages(chatid,search="d41d8cd98f00b204e9800998ecf8427e"):
-                msg_id=message.id
-            message = await client.get_messages(chatid, ids=msg_id)
-            if msg_id != 1:
-                await message.delete()
-            #time.sleep(3)
-            await client.send_file(chatid,"d41d8cd98f00b204e9800998ecf8427e",caption="d41d8cd98f00b204e9800998ecf8427e")
+        
+        db_digest = get_md5("d41d8cd98f00b204e9800998ecf8427e")
+        if db_digest != "d41d8cd98f00b204e9800998ecf8427e":
+            if db_digest != old_db_digest:
+                msg_id = 1
+                async for message in client.iter_messages(chatid,search="d41d8cd98f00b204e9800998ecf8427e"):
+                    msg_id=message.id
+                message = await client.get_messages(chatid, ids=msg_id)
+                if msg_id != 1:
+                    await message.delete()
+                #time.sleep(3)
+                await client.send_file(chatid,"d41d8cd98f00b204e9800998ecf8427e",caption="d41d8cd98f00b204e9800998ecf8427e")
+            old_db_digest = db_digest
         else: 
-            print ("attensione file datastore vuoto!")
+            print ("attenzione file datastore vuoto!")
             with open("d41d8cd98f00b204e9800998ecf8427e") as search:
                 for line in search:
                     print (line)
@@ -226,21 +229,33 @@ def upload_normal(elem,digest,dirpath, nomefile,epoch_localfile): #upload files 
 def has_hidden_attribute(filepath):
     return bool(os.stat(filepath).st_file_attributes & stat.FILE_ATTRIBUTE_HIDDEN)
 
+character_sets=["#","@","."]
 def getListOfFiles(dirName):
     listOfFile = os.listdir(dirName) # create a list of file and sub directories
-    allFiles = list() #names in the given directory 
+    allFiles = list() #names in the given directory
     for entry in listOfFile: # Iterate over all the entries
         fullPath = os.path.join(dirName, entry) # Create full path
         if os.path.isdir(fullPath): # If entry is a directory then get the list of files in this directory
             allFiles = allFiles + getListOfFiles(fullPath)
         else:
-            has_attribute = has_hidden_attribute(fullPath)
-            if debug == 1: print ("has_attribute = ", has_attribute)
-            if has_attribute == True and hidden_files == 1:
-                pass
-            else:
-                allFiles.append(fullPath)
-    #print(allFiles)
+            if os_name == "Windows":
+                has_attribute = has_hidden_attribute(fullPath)
+                if debug == 1: print ("has_attribute = ", has_attribute)
+                if has_attribute == True and hidden_files == 1:
+                    pass
+                else:
+                    allFiles.append(fullPath)
+            if os_name == "Linux":
+                non_aggiungere = 0
+                var = fullPath.split("/")
+                for elem in var:
+                    if elem != "":
+                        if elem[0] in character_sets:
+                            non_aggiungere = 1
+                if non_aggiungere == 1:
+                    pass
+                else:
+                    allFiles.append(fullPath)
     return allFiles
 
 async def download_datastore():
