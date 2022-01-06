@@ -19,20 +19,17 @@ if os.path.isfile(fname) is False:
     f.close()
 
 def upload_datastore_func():
-    async def upload_datastore():
-        
+    async def upload_datastore():        
         db_digest = get_md5("d41d8cd98f00b204e9800998ecf8427e")
         if db_digest != "d41d8cd98f00b204e9800998ecf8427e":
-            if db_digest != old_db_digest:
-                msg_id = 1
-                async for message in client.iter_messages(chatid,search="d41d8cd98f00b204e9800998ecf8427e"):
-                    msg_id=message.id
-                message = await client.get_messages(chatid, ids=msg_id)
-                if msg_id != 1:
-                    await message.delete()
-                #time.sleep(3)
-                await client.send_file(chatid,"d41d8cd98f00b204e9800998ecf8427e",caption="d41d8cd98f00b204e9800998ecf8427e")
-            old_db_digest = db_digest
+            msg_id = 1
+            async for message in client.iter_messages(chatid,search="d41d8cd98f00b204e9800998ecf8427e"):
+                msg_id=message.id
+            message = await client.get_messages(chatid, ids=msg_id)
+            if msg_id != 1:
+                await message.delete()
+            #time.sleep(3)
+            await client.send_file(chatid,"d41d8cd98f00b204e9800998ecf8427e",caption="d41d8cd98f00b204e9800998ecf8427e")
         else: 
             print ("attenzione file datastore vuoto!")
             with open("d41d8cd98f00b204e9800998ecf8427e") as search:

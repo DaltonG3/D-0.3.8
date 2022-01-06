@@ -6,13 +6,11 @@ from FastTelethon import download_file, upload_file
 from config import *
 from scripts import *
 
-
-
-
 timestamp = calendar.timegm(time.gmtime())
 print("backup iniziato alle",timestamp)
-old_db_digest = "d41d8cd98f00b204e9800998ecf8427e"
+
 def main():
+    old_db_digest = "d41d8cd98f00b204e9800998ecf8427e"
     total_errors = []
     total_errors_files = []
     var_total_error_files = []
@@ -28,7 +26,11 @@ def main():
         try: #in caso di errore passo al file successivo
             is_divisible = n_file_current % step == 0 #upload datastore every step file...
             if is_divisible == True:
-                upload_datastore_func()
+                db_digest = get_md5("d41d8cd98f00b204e9800998ecf8427e")
+
+                if old_db_digest != db_digest:
+                    upload_datastore_func()
+                old_db_digest = db_digest
             epoch_localfile, dirpath_without_root, nomefile, dimension = obtain_info(elem)
             if debug == 1: print ("epoch_localfile ==",epoch_localfile)
             if debug == 1: print("Elemento ==", dirpath_without_root)
