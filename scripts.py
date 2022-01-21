@@ -11,13 +11,16 @@ local_md5 = []
 kilobytes = 1024
 megabytes = kilobytes * 1000
 chunksize = int(maxsize * megabytes)
-client.start()
 fname = "d41d8cd98f00b204e9800998ecf8427e"
 if os.path.isfile(fname) is False:
     print("datastore non presente lo creo")
     f= open("d41d8cd98f00b204e9800998ecf8427e","w+")
     f.close()
-
+def writelog(testo):
+    if debug == 1:
+        with open("log.txt", "a") as logfile:
+            ora =  time.strftime('%d %b %p%H:%M %Y')
+            print(ora, testo, file = logfile)
 def upload_datastore_func():
     async def upload_datastore():        
         db_digest = get_md5("d41d8cd98f00b204e9800998ecf8427e")
@@ -50,6 +53,7 @@ def check_if_exists(elem):
 async def main_remote_md5(): #ottengo tutti gli md5 in remoto
     md5_is_present=[]
     message = await client.get_messages(chatid)
+    print(message)
     async for message in client.iter_messages(chatid):
         if message.text is not None:
             if ">>digest_cache<<" in message.text:
@@ -58,7 +62,9 @@ async def main_remote_md5(): #ottengo tutti gli md5 in remoto
                 md5_is_present.append(md5)
             else:    
                 md5_is_present.append(message.text)
-    #print ("in main_remote_md5 md5_is_present ==",md5_is_present)
+    print(md5_is_present)
+    testo = "in main_remote_md5 md5_is_present == " + str(md5_is_present)
+    writelog(testo)
     return md5_is_present
 with client:
     md5_in_remote=client.loop.run_until_complete(main_remote_md5())
@@ -133,16 +139,19 @@ def replace(file,searchExp,replaceExp):
         sys.stdout.write(line)
 
 def update_is_local(md5, is_local):
-    if debug == 1: print("md5 ==",md5)
+    testo = "md5 ==" + md5
+    writelog(testo)
     if is_local == "no":
-        if debug == 1: print("update_is_local == no")
+        testo = "update_is_local == no"
+        writelog(testo)
         with open("d41d8cd98f00b204e9800998ecf8427e") as search:
             for line in search:
                 line = line.rstrip()  # remove '\n' at end of line
                 if md5 in line:
                     replace("d41d8cd98f00b204e9800998ecf8427e",">>is_local<<yes"+">>md5<<"+md5,">>is_local<<no"+">>md5<<"+md5)
     if is_local == "yes":
-        if debug == 1: print("update_is_local == yes")
+        testo = "update_is_local == yes"
+        writelog(testo)
         with open("d41d8cd98f00b204e9800998ecf8427e") as search:
             for line in search:
                 line = line.rstrip()  # remove '\n' at end of line
@@ -177,33 +186,43 @@ async def search_msg_id_cache(md5):
 
 
 def upload(elem, dimension, nomefile,digest,timestamp,epoch_localfile,dirpath_without_root, n_file_current, n_file_total):
-    if dimension > int(maxsize * 1024 * 1000): #se la dimensione sumepera la massima consentita
-        print("file maggiore della dimensione specificata, procedo alla divisione...")
-        split(elem, cache, nomefile, digest, timestamp, dimension , epoch_localfile , chunksize)
-        was_uploaded = 0
-        while was_uploaded != 1:
-            was_uploaded = check_after_upload_cache(cache, digest, timestamp,dirpath_without_root,dimension)
-            if was_uploaded == 1:
-                print(">>is_local<<"+"yes"+">>md5<<"+digest+">>file<<"+dirpath_without_root+">>timestamp<<"+str(timestamp)+">>epoch<<"+str(epoch_localfile)+">>end_of_line<<",file=open("d41d8cd98f00b204e9800998ecf8427e", "a"))
-                time.sleep(1)
-        #upload_cache(cache, digest, timestamp,dirpath_without_root,dimension,epoch_localfile)
-        print("")
-    else: # se la dimensione NON supera la massima consentita
-        was_uploaded = 0
-        while was_uploaded != 1:
-            upload_normal(elem,digest,dirpath_without_root,nomefile,epoch_localfile)
+    try:
+        if dimension > int(maxsize * 1024 * 1000): #se la dimensione sumepera la massima consentita
+            print("file maggiore della dimensione specificata, procedo alla divisione...")
+            split(elem, cache, nomefile, digest, timestamp, dimension , epoch_localfile , chunksize)
+            was_uploaded = 0
+            while was_uploaded != 1:
+                was_uploaded = check_after_upload_cache(cache, digest, timestamp,dirpath_without_root,dimension)
+                if was_uploaded == 1:
+                    print(">>is_local<<"+"yes"+">>md5<<"+digest+">>file<<"+dirpath_without_root+">>timestamp<<"+str(timestamp)+">>epoch<<"+str(epoch_localfile)+">>end_of_line<<",file=open("d41d8cd98f00b204e9800998ecf8427e", "a"))
+                    time.sleep(1)
+            #upload_cache(cache, digest, timestamp,dirpath_without_root,dimension,epoch_localfile)
             print("")
-            was_uploaded = check_after_upload(digest)
-            if debug == 1: print("was_uploaded == ", was_uploaded)
-            if was_uploaded == 1: #se il caricamento è stato positivo
-                print ("file uploaded successfully")
+        else: # se la dimensione NON supera la massima consentita
+            was_uploaded = 0
+            while was_uploaded != 1:
+                upload_normal(elem,digest,dirpath_without_root,nomefile,epoch_localfile)
                 print("")
-                print(">>is_local<<"+"yes"+">>md5<<"+digest+">>file<<"+dirpath_without_root+">>timestamp<<"+str(timestamp)+">>epoch<<"+str(epoch_localfile)+">>end_of_line<<",file=open("d41d8cd98f00b204e9800998ecf8427e", "a"))
-                time.sleep(1)
-            else: #se il caricamento non è stato positivo
-                print("< maxsize I file non sono stati caricati correttamente, procedo all'eliminazione e li ricarco...")
-                check_after_upload(dimension, digest, dirpath_without_root, nomefile)
-    md5_in_remote.append(digest) #aggiungo l'md5 agli md5 remoti
+                was_uploaded = check_after_upload(digest)
+                testo = "was_uploaded == ", was_uploaded # attenzione ritorna un integer!!!
+                writelog(testo)
+                if was_uploaded == 1: #se il caricamento è stato positivo
+                    print ("file uploaded successfully")
+                    print("")
+                    print(">>is_local<<"+"yes"+">>md5<<"+digest+">>file<<"+dirpath_without_root+">>timestamp<<"+str(timestamp)+">>epoch<<"+str(epoch_localfile)+">>end_of_line<<",file=open("d41d8cd98f00b204e9800998ecf8427e", "a"))
+                    time.sleep(1)
+                else: #se il caricamento non è stato positivo
+                    print("< maxsize I file non sono stati caricati correttamente, procedo all'eliminazione e li ricarco...")
+                    check_after_upload(dimension, digest, dirpath_without_root, nomefile)
+        md5_in_remote.append(digest) #aggiungo l'md5 agli md5 remoti
+    except Exception as e:
+        ora =  time.strftime('%d %b %p%H:%M %Y')
+        with open("log.txt", "a") as logfile:
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            print(exc_type, fname, exc_tb.tb_lineno, file = logfile)
+            print(ora,"Errore! == "+str(e), file = logfile)
+        pass
 
 def upload_normal(elem,digest,dirpath, nomefile,epoch_localfile): #upload files < 2GB
     client.start()
@@ -237,7 +256,8 @@ def getListOfFiles(dirName):
         else:
             if os_name == "Windows":
                 has_attribute = has_hidden_attribute(fullPath)
-                if debug == 1: print ("has_attribute = ", has_attribute)
+                testo = "has_attribute = " + has_attribute
+                writelog(testo)
                 if has_attribute == True and hidden_files == 1:
                     pass
                 else:
@@ -284,7 +304,8 @@ async def download(md5):
             else:
                 if md5_already_found != md5:
                     asd_list_of_files = search_in_datastore(md5)
-                    if debug == 1 : print ("asd_listOfFiles", asd_list_of_files)
+                    testo = "asd_listOfFiles" + str(asd_list_of_files)
+                    writelog (testo)
                     for file in asd_list_of_files:
                         if "digest_cache" in file:
                             md5 = get_digest_cache(file)
@@ -449,15 +470,13 @@ def get_list_of_files_present(): #ottengo la lista degli md5 locali, e aggiungo 
     listOfFiles = list() # Get the list of all files in directory tree at given path    
     for (dirpath, dirnames, filenames) in os.walk(dirName):
         listOfFiles += [os.path.join(dirpath, file) for file in filenames]   
-    for elem in listOfFiles:  # Print the files  
-        if debug == 1 : print(elem)
-        # time=os.path.getmtime(elem)
-        # print(time)
+    for elem in listOfFiles:  # Print the files
+        writelog(elem)
         digest = get_md5(elem)
         files_present.append(digest)
         nomefile = elem[elem.rindex('/')+1:]
-        #print("digest "+digest+" è stato aggiunto alla lista dei file presenti")
-    #print(files_present)
+        testo = "digest "+digest+" è stato aggiunto alla lista dei file presenti"
+        writelog (testo)
     return files_present
 
 def get_md5(elem):
@@ -576,7 +595,8 @@ def replace(file,old,new):
 def replace_path(digest,dirpath_without_root,timestamp,epoch_localfile):
     with open("d41d8cd98f00b204e9800998ecf8427e") as search:
         for line in search:
-            if debug == 1 : print ("line ==", line)
+            testo = "line ==" + line
+            writelog (testo)
             line = line.rstrip()  # remo
             if digest in line and ">>digest_cache<<" not in line:
                 replace("d41d8cd98f00b204e9800998ecf8427e",line,">>is_local<<yes>>md5<<"+str(digest)+">>file<<"+dirpath_without_root+">>timestamp<<"+str(timestamp)+">>epoch<<"+str(epoch_localfile)+">>end_of_line<<")
@@ -590,7 +610,8 @@ async def update_presence(md5): #aggiorno il messaggio se il file non è piu pre
         md5 = digest.group(1)
         timestamp_tmp = re.search('>>timestamp<<(.*)>>path<<', message.text)
         timestamp = timestamp_tmp.group(1)
-        if debug == 1 : print("path ==",path)
+        testo = "path ==" + str(path)
+        writelog = (testo)
         await client.edit_message(chatid,msg_id,">>is_local<<"+"no"+">>md5<<"+md5+">>timestamp<<"+str(timestamp)+">>path<<"+path)
 '''
             md5_tmp = re.search('>>md5<<(.*)>>file<<', line)
@@ -647,10 +668,16 @@ def search_in_datastore(var):
         return strings
 
 def check_if_newer(file_present, epoch_localfile):
-    if debug == 1 : print("in check_if_present line == ", file_present)
+    if debug == 1 : 
+        ora =  time.strftime('%d %b %p%H:%M %Y')
+        with open("log.txt", "a") as logfile:
+            print(ora, "in check_if_present line == ", file_present, file = logfile)
     epoch = get_epoch(file_present)
     md5= get_digest(file_present)
-    if debug == 1 : print ("in check_if_newer epoch ==", epoch)
+    if debug == 1 : 
+        ora =  time.strftime('%d %b %p%H:%M %Y')
+        with open("log.txt", "a") as logfile:
+            print (ora, "in check_if_newer epoch ==", epoch, file = logfile)
     if epoch_localfile > int(epoch):
         update_is_local(md5,"no")
         return 1
@@ -685,3 +712,4 @@ async def update_presence(md5): #aggiorno il messaggio se il file non è piu pre
         print("path ==",path)
         await client.edit_message(chatid,msg_id,">>is_local<<"+"no"+">>md5<<"+md5+">>timestamp<<"+str(timestamp)+">>path<<"+path)
 '''
+print("arrivato alla fine di scripts")
