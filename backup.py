@@ -1,4 +1,4 @@
-#ver D-0.3.9
+#ver D-0.4.0
 
 from genericpath import exists
 import os, hashlib, calendar, time, shutil, math, pathlib
