@@ -34,6 +34,8 @@ def main():
             print(ora, "n_file_total", n_file_total, file = logfile)
     for elem in listOfFiles:  #per ogni file....
         try: #in caso di errore passo al file successivo
+            testo = "File " + str(n_file_current) + " di " +str( n_file_total)
+            writelog(testo)
             is_divisible = n_file_current % step == 0 #upload datastore every step file...
             if is_divisible == True:
                 db_digest = get_md5("d41d8cd98f00b204e9800998ecf8427e")
@@ -52,10 +54,13 @@ def main():
                     print(ora, "Elemento ==", dirpath_without_root, file = logfile)
             print("nomefile ==", nomefile)
             elementi_in_datastore = search_in_array(dirpath_without_root,files_in_datastore) #numerico
+            
+            ''' # lo evito in quanto scriverei l'elenco di tutti i file nel log... 
             if debug == 1: 
                 ora =  time.strftime('%d %b %p%H:%M %Y')
                 with open("log.txt", "a") as logfile:
                     print(ora, "search in array ==", elementi_in_datastore, file = logfile)
+            '''
             if elementi_in_datastore > 0: #ho tovato almeno un file con lo stesso nome
                 files_present = search_in_datastore(dirpath_without_root) #ottengo la lista dei file che risulta presente
                  #1 o 0 ottengo l'informazione, se è un file nuovo
